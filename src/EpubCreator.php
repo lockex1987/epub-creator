@@ -5,7 +5,7 @@ namespace Lockex1987\Epub;
 use ZipArchive;
 
 /**
- * TODO: Publish lên packagist.
+ * https://packagist.org/packages/lockex1987/epub-creator
  */
 class EpubCreator
 {
