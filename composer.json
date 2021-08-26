@@ -1,0 +1,25 @@
+{
+    "name": "lockex1987/epub-creator",
+    "description": "Create epub file",
+    "type": "library",
+    "keywords": [
+        "epub",
+        "creator"
+    ],
+    "homepage": "https://github.com/lockex1987/epub-creator",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "lockex1987",
+            "email": "lockex1987@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Lockex1987\\Epub\\": "src"
+        }
+    },
+    "require": {
+        "php":">=8.0.0"
+    }
+}
