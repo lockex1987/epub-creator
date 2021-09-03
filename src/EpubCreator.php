@@ -104,10 +104,6 @@ class EpubCreator
             .font-size-1\.5 {
                 font-size: 1.5rem;
             }
-
-            aside {
-                display: none;
-            }
             CSS;
         file_put_contents('./OEBPS/css/style.css', $text);
     }
