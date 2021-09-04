@@ -40,8 +40,9 @@ class EpubCreator
         $this->geneateTocFile($title, $bookId, $chapters);
 
         $this->createFolderIfNotExist('./OEBPS/text');
-        $this->generateNavFile($chapters, $language);
         $this->generateCoverFile($coverWidth, $coverHeight);
+        $this->generateJacketFile($title, $author);
+        $this->generateNavFile($chapters, $language);
 
         // Ghi nội dung file
         foreach ($chapters as $chapter) {
@@ -104,6 +105,17 @@ class EpubCreator
             .font-size-1\.5 {
                 font-size: 1.5rem;
             }
+
+            .jacket-page .title {
+                margin-top: 40%;
+                text-align: center;
+                font-size: 1.5rem;
+                margin-bottom: 3rem;
+            }
+
+            .jacket-page .author {
+                text-align: center;
+            }
             CSS;
         file_put_contents('./OEBPS/css/style.css', $text);
     }
@@ -162,6 +174,7 @@ class EpubCreator
                     <item media-type="application/x-dtbncx+xml" href="toc.ncx" id="toc.ncx" />
 
                     <item media-type="application/xhtml+xml" href="text/cover.xhtml" id="cover.xhtml" properties="svg" />
+                    <item media-type="application/xhtml+xml" href="text/jacket.xhtml" id="jacket.xhtml" />
                     <item media-type="application/xhtml+xml" href="text/nav.xhtml" id="nav.xhtml" properties="nav" />
 
             $temp1
@@ -172,6 +185,7 @@ class EpubCreator
 
                 <spine toc="toc.ncx">
                     <itemref idref="cover.xhtml" />
+                    <itemref idref="jacket.xhtml"/>
                     <itemref idref="nav.xhtml" />
 
             $temp2
@@ -208,6 +222,7 @@ class EpubCreator
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                 <title>Mục lục</title>
+                <link href="../css/style.css" rel="stylesheet" type="text/css" />
             </head>
 
             <body epub:type="frontmatter">
@@ -222,6 +237,30 @@ class EpubCreator
             </html>
             XML;
         file_put_contents('./OEBPS/text/nav.xhtml', $text);
+    }
+
+    /**
+     * Generate file OEBPS/text/jacket.xhtml.
+     */
+    private function generateJacketFile(string $title, string $author): void
+    {
+        $text = <<<XML
+            <?xml version="1.0" encoding="utf-8"?>
+            <!DOCTYPE html>
+            <html xmlns="http://www.w3.org/1999/xhtml">
+            <head>
+                <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                <title>Bìa lót</title>
+                <link href="../css/style.css" rel="stylesheet" type="text/css" />
+            </head>
+
+            <body class="jacket-page">
+                <div class="title">$title</div>
+                <div class="author">$author</div>
+            </body>
+            </html>
+            XML;
+        file_put_contents('OEBPS/text/jacket.xhtml', $text);
     }
 
     /**
