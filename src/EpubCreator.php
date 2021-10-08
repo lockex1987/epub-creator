@@ -9,23 +9,52 @@ use ZipArchive;
  */
 class EpubCreator
 {
+    // Tiêu đề
+    private string $title;
+
+    // Tác giả
+    private string $author;
+
+    // Mảng các chương
+    // Mỗi phần tử gồm có name: string là tên và content: string là mã XHTML
+    private array $chapters;
+
+    // Đường dẫn ảnh bìa
+    private string $coverPath;
+
+    // ID sách (tự sinh)
+    private string $bookId;
+
+    // Ngôn ngữ
+    private string $language;
+
+
     /**
      * Sinh nội dung file epub.
-     * @param array $chapters Mảng [name, content]
+     * @param     
      */
-    public function createEpub(
+    public function __construct(
         string $title,
         string $author,
         array $chapters,
         string $coverPath
-    ): void {
-        $bookId = $this->generateUuid4();
-        [$coverWidth, $coverHeight] = getimagesize($coverPath);
-        $language = 'vi-VN'; // chỗ file nav đã là tiếng Việt rồi
+    ) {
+        $this->title = $title;
+        $this->author = $author;
+        $this->chapters = $chapters;
+        $this->coverPath = $coverPath;
 
-        for ($i = 0; $i < count($chapters); $i++) {
+        $this->bookId = UuidUtils::generateUuid4();
+
+        // Cố định là Tiếng Việt (chỗ file nav đã là tiếng Việt rồi)
+        $this->language = 'vi-VN';
+
+        [$coverWidth, $coverHeight] = getimagesize($this->coverPath);
+        
+
+        for ($i = 0; $i < count($this->chapters); $i++) {
             // Trường fileName không bao gồm đuôi .xhtml
-            $chapters[$i]['fileName'] = 'section-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
+            $this->chapters[$i]['fileName'] = 'section-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
         }
 
         $this->clean();
@@ -36,33 +65,33 @@ class EpubCreator
         $this->generateContainerFile();
 
         $this->createFolderIfNotExist('./OEBPS');
-        $this->generateContentFile($title, $author, $language, $bookId, $chapters);
-        $this->geneateTocFile($title, $bookId, $chapters);
+        $this->generateContentFile();
+        $this->geneateTocFile();
 
         $this->createFolderIfNotExist('./OEBPS/text');
         $this->generateCoverFile($coverWidth, $coverHeight);
-        $this->generateJacketFile($title, $author);
-        $this->generateNavFile($chapters, $language);
+        $this->generateJacketFile();
+        $this->generateNavFile();
 
         // Ghi nội dung file
-        foreach ($chapters as $chapter) {
+        foreach ($this->chapters as $chapter) {
             $fileName = $chapter['fileName'];
             $content = $chapter['content'];
             file_put_contents('./OEBPS/text/' . $fileName . '.xhtml', $content);
         }
 
         $this->createFolderIfNotExist('./OEBPS/images');
-        copy($coverPath, './OEBPS/images/cover.jpg');
+        copy($this->coverPath, './OEBPS/images/cover.jpg');
 
         $this->createFolderIfNotExist('./OEBPS/css');
         $this->generateStyleFile();
 
-        $outputFile = $this->convertVietnameseToLowerAscii($title) . '.epub';
-        $this->writeEpubFile($outputFile);
-        
-        $this->clean();
+        return $this;
     }
 
+    /**
+     * Tạo thư mục nếu không tồn tại.
+     */
     private function createFolderIfNotExist(string $path): void
     {
         if (!file_exists($path)) {
@@ -141,18 +170,18 @@ class EpubCreator
     /**
      * Sinh file OEBPS/content.opf.
      */
-    private function generateContentFile(string $title, string $author, string $language, string $bookId, array $chapters): void
+    private function generateContentFile(): void
     {
         $temp1 = implode("\n", array_map(function ($chapter) {
             return <<<XML
                     <item media-type="application/xhtml+xml" href="text/${chapter['fileName']}.xhtml" id="${chapter['fileName']}.xhtml" />
             XML;
-        }, $chapters));
+        }, $this->chapters));
         $temp2 = implode("\n", array_map(function ($chapter) {
             return <<<XML
                     <itemref idref="${chapter['fileName']}.xhtml" />
             XML;
-        }, $chapters));
+        }, $this->chapters));
         $text = <<<XML
             <?xml version="1.0"
                 encoding="utf-8"
@@ -164,10 +193,10 @@ class EpubCreator
                 <metadata xmlns:opf="http://www.idpf.org/2007/opf"
                     xmlns:dcterms="http://purl.org/dc/terms/"
                     xmlns:dc="http://purl.org/dc/elements/1.1/">
-                    <dc:identifier id="BookId">$bookId</dc:identifier>
-                    <dc:title>$title</dc:title>
-                    <dc:creator>$author</dc:creator>
-                    <dc:language>$language</dc:language>
+                    <dc:identifier id="BookId">$this->bookId</dc:identifier>
+                    <dc:title>$this->title</dc:title>
+                    <dc:creator>$this->author</dc:creator>
+                    <dc:language>$this->language</dc:language>
                 </metadata>
 
                 <manifest>
@@ -202,7 +231,7 @@ class EpubCreator
     /**
      * Generate file OEBPS/text/nav.xhtml.
      */
-    private function generateNavFile(array $chapters, string $language): void
+    private function generateNavFile(): void
     {
         $temp1 = implode("\n", array_map(function ($chapter) {
             return <<<XML
@@ -210,15 +239,15 @@ class EpubCreator
                             <a href="${chapter['fileName']}.xhtml">${chapter['name']}</a>
                         </li>
             XML;
-        }, $chapters));
+        }, $this->chapters));
         $text = <<<XML
             <?xml version="1.0"
                 encoding="utf-8"?>
             <!DOCTYPE html>
             <html xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:epub="http://www.idpf.org/2007/ops"
-                lang="$language"
-                xml:lang="$language">
+                lang="$this->language"
+                xml:lang="$this->language">
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                 <title>Mục lục</title>
@@ -242,7 +271,7 @@ class EpubCreator
     /**
      * Generate file OEBPS/text/jacket.xhtml.
      */
-    private function generateJacketFile(string $title, string $author): void
+    private function generateJacketFile(): void
     {
         $text = <<<XML
             <?xml version="1.0" encoding="utf-8"?>
@@ -255,8 +284,8 @@ class EpubCreator
             </head>
 
             <body class="jacket-page">
-                <div class="title">$title</div>
-                <div class="author">$author</div>
+                <div class="title">$this->title</div>
+                <div class="author">$this->author</div>
             </body>
             </html>
             XML;
@@ -300,7 +329,7 @@ class EpubCreator
     /**
      * Sinh file OEBPS/toc.ncx.
      */
-    private function geneateTocFile(string $title, string $bookId, array $chapters): void
+    private function geneateTocFile(): void
     {
         $temp1 = implode("\n", array_map(function ($chapter, $idx) {
             $id = $idx + 2;
@@ -313,21 +342,21 @@ class EpubCreator
                         <content src="text/${chapter['fileName']}.xhtml" />
                     </navPoint>
             XML;
-        }, $chapters, array_keys($chapters)));
+        }, $this->chapters, array_keys($this->chapters)));
         $text = <<<XML
             <?xml version="1.0"
                 encoding="utf-8"?>
             <ncx version="2005-1"
                 xmlns="http://www.daisy.org/z3986/2005/ncx/">
                 <head>
-                    <meta name="dtb:uid" content="$bookId" />
+                    <meta name="dtb:uid" content="$this->bookId" />
                     <meta name="dtb:depth" content="1" />
                     <meta name="dtb:totalPageCount" content="0" />
                     <meta name="dtb:maxPageNumber" content="0" />
                 </head>
 
                 <docTitle>
-                    <text>$title</text>
+                    <text>$this->title</text>
                 </docTitle>
 
                 <navMap>
@@ -348,15 +377,21 @@ class EpubCreator
 
     /**
      * Tạo file đầu ra Epub.
+     * @param string $outputFile    Đường dẫn file epub đầu ra
      */
-    public function writeEpubFile(string $outZipPath): void
+    public function writeEpubFile(string $outputFile = '')
     {
-        if (file_exists($outZipPath)) {
-            unlink($outZipPath);
+        // Nếu người dùng không chỉ định file đầu ra thì tự sinh tên file từ tiêu đề
+        if (!$outputFile) {
+            $outputFile = CharacterUtils::convertVietnameseToLowerAscii($this->title) . '.epub';
+        }
+
+        if (file_exists($outputFile)) {
+            unlink($outputFile);
         }
 
         $zipFile = new ZipArchive();
-        $zipFile->open($outZipPath, ZipArchive::CREATE);
+        $zipFile->open($outputFile, ZipArchive::CREATE);
 
         $zipFile->addFile('mimetype', 'mimetype');
 
@@ -364,51 +399,19 @@ class EpubCreator
         ZipUtils::zipDir('./OEBPS', $zipFile);
 
         $zipFile->close();
+
+        $this->clean();
     }
 
     /**
      * Xóa các file trung gian.
      */
-    public function clean(): void
+    private function clean(): void
     {
         if (file_exists('mimetype')) {
             unlink('mimetype');
         }
         FileUtils::deleteFolder('./META-INF');
         FileUtils::deleteFolder('./OEBPS');
-    }
-
-    /**
-     * Sinh UUID (version 4).
-     */
-    private function generateUuid4(): string
-    {
-        // Generate 16 bytes (128 bits) of random data
-        $data = random_bytes(16);
-
-        // Set version to 0100
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-
-        // Set bits 6-7 to 10
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-
-        // Output the 36 character UUID
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-    }
-
-    /**
-     * Convert các ký tự tiếng Việt sang ASCII (không dấu) chữ thường.
-     */
-    private function convertVietnameseToLowerAscii(string $str): string
-    {
-        $str = mb_convert_case($str, MB_CASE_LOWER, 'UTF-8');
-        $str = preg_replace("/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/", 'a', $str);
-        $str = preg_replace("/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/", 'e', $str);
-        $str = preg_replace("/(ì|í|ị|ỉ|ĩ)/", 'i', $str);
-        $str = preg_replace("/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/", 'o', $str);
-        $str = preg_replace("/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/", 'u', $str);
-        $str = preg_replace("/(ỳ|ý|ỵ|ỷ|ỹ)/", 'y', $str);
-        $str = preg_replace("/(đ)/", 'd', $str);
-        return $str;
     }
 }

@@ -1,6 +1,7 @@
 {
     "name": "lockex1987/epub-creator",
     "description": "Create epub file",
+    "version": "1.2.0",
     "type": "library",
     "keywords": [
         "epub",

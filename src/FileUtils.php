@@ -4,6 +4,9 @@ namespace Lockex1987\Epub;
 
 class FileUtils
 {
+    /**
+     * Xóa thư mục và tất cả các file trong đó.
+     */
     public static function deleteFolder(string $folderPath): void
     {
         if (!file_exists($folderPath)) {

@@ -8,10 +8,10 @@ class ZipUtils
 {
     /**
      * Thêm các file và thư mục con trong một thư mục vào file zip.
-     * Hàm private gọi đệ quy
-     * @param string $folder Tên thư mục
-     * @param ZipArchive $zipFile Đối tượng ZipArchive
-     * @param int $exclusiveLength Number of text to be exclusived from the file path.
+     * Hàm private gọi đệ quy.
+     * @param string $folder    Tên thư mục
+     * @param ZipArchive $zipFile    Đối tượng ZipArchive
+     * @param int $exclusiveLength    Number of text to be exclusived from the file path.
      */
     private static function folderToZip($folder, &$zipFile, $exclusiveLength)
     {
@@ -36,8 +36,8 @@ class ZipUtils
     /**
      * Nén zip một thư mục (bao gồm chính nó).
      *
-     * @param string $sourcePath Đường dẫn thư mục
-     * @param ZipArchive $zipFile File zip
+     * @param string $sourcePath    Đường dẫn thư mục
+     * @param ZipArchive $zipFile    File zip
      */
     public static function zipDir(string $sourcePath, ZipArchive $zipFile): void
     {

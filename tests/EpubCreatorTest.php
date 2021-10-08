@@ -4,12 +4,17 @@ namespace Tests\Lockex1987\Epub;
 
 use PHPUnit\Framework\TestCase;
 use Lockex1987\Epub\EpubCreator;
+use Lockex1987\Epub\CharacterUtils;
 
 class EpubCreatorTest extends TestCase
 {
+    /**
+     * Tạo file epub.
+     */
     public function testCreateEpub(): void
     {
         $content = file_get_contents('assets/chapter-1.html');
+
         $title = 'Thư Kiếm Ân Cừu Lục';
         $author = 'Kim Dung';
         $chapters = [
@@ -19,7 +24,15 @@ class EpubCreatorTest extends TestCase
             ]
         ];
         $coverPath = 'assets/cover.jpg';
-        $epubCreator = new EpubCreator();
-        $epubCreator->createEpub($title, $author, $chapters, $coverPath);
+
+        $outputFile = CharacterUtils::convertVietnameseToLowerAscii($title);
+        if (file_exists($outputFile)) {
+            unlink($outputFile);
+        }
+
+        (new EpubCreator($title, $author, $chapters, $coverPath))
+            ->writeEpubFile($outputFile);
+
+        $this->assertFileExists($outputFile);
     }
 }
