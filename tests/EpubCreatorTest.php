@@ -31,6 +31,7 @@ class EpubCreatorTest extends TestCase
         }
 
         (new EpubCreator($title, $author, $chapters, $coverPath))
+            ->setTempFolder('temp')
             ->writeEpubFile($outputFile);
 
         $this->assertFileExists($outputFile);

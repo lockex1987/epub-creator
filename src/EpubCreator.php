@@ -419,8 +419,8 @@ class EpubCreator
      */
     private function clean(): void
     {
-        if (file_exists('mimetype')) {
-            unlink('mimetype');
+        if (file_exists($this->tempFolder . '/mimetype')) {
+            unlink($this->tempFolder . '/mimetype');
         }
         FileUtils::deleteFolder($this->tempFolder . '/META-INF');
         FileUtils::deleteFolder($this->tempFolder . '/OEBPS');
