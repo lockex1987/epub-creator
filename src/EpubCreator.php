@@ -28,6 +28,11 @@ class EpubCreator
     // Ngôn ngữ
     private string $language;
 
+    // Đường dẫn thư mục chứa các file tạm
+    // Ở môi trường web, có khi user chạy Nginx không có quyền
+    // Mặc định là thư mục hiện tại
+    // Không có chứa dấu / ở cuối
+    private string $tempFolder = '.';
 
     /**
      * Sinh nội dung file epub.
@@ -48,44 +53,14 @@ class EpubCreator
 
         // Cố định là Tiếng Việt (chỗ file nav đã là tiếng Việt rồi)
         $this->language = 'vi-VN';
+    }
 
-        [$coverWidth, $coverHeight] = getimagesize($this->coverPath);
-        
-
-        for ($i = 0; $i < count($this->chapters); $i++) {
-            // Trường fileName không bao gồm đuôi .xhtml
-            $this->chapters[$i]['fileName'] = 'section-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
-        }
-
-        $this->clean();
-
-        file_put_contents('mimetype', 'application/epub+zip');
-
-        $this->createFolderIfNotExist('./META-INF');
-        $this->generateContainerFile();
-
-        $this->createFolderIfNotExist('./OEBPS');
-        $this->generateContentFile();
-        $this->geneateTocFile();
-
-        $this->createFolderIfNotExist('./OEBPS/text');
-        $this->generateCoverFile($coverWidth, $coverHeight);
-        $this->generateJacketFile();
-        $this->generateNavFile();
-
-        // Ghi nội dung file
-        foreach ($this->chapters as $chapter) {
-            $fileName = $chapter['fileName'];
-            $content = $chapter['content'];
-            file_put_contents('./OEBPS/text/' . $fileName . '.xhtml', $content);
-        }
-
-        $this->createFolderIfNotExist('./OEBPS/images');
-        copy($this->coverPath, './OEBPS/images/cover.jpg');
-
-        $this->createFolderIfNotExist('./OEBPS/css');
-        $this->generateStyleFile();
-
+    /**
+     * Thiết lập lại đường dẫn thư mục chứa các file tạm.
+     */
+    public function setTempFolder(string $tempFolder): self
+    {
+        $this->tempFolder = $tempFolder;
         return $this;
     }
 
@@ -146,7 +121,7 @@ class EpubCreator
                 text-align: center;
             }
             CSS;
-        file_put_contents('./OEBPS/css/style.css', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/css/style.css', $text);
     }
 
     /**
@@ -164,7 +139,7 @@ class EpubCreator
                 </rootfiles>
             </container>
             XML;
-        file_put_contents('./META-INF/container.xml', $text);
+        file_put_contents($this->tempFolder . '/META-INF/container.xml', $text);
     }
 
     /**
@@ -225,7 +200,7 @@ class EpubCreator
                 </guide>
             </package>
             XML;
-        file_put_contents('./OEBPS/content.opf', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/content.opf', $text);
     }
 
     /**
@@ -265,7 +240,7 @@ class EpubCreator
             </body>
             </html>
             XML;
-        file_put_contents('./OEBPS/text/nav.xhtml', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/text/nav.xhtml', $text);
     }
 
     /**
@@ -289,7 +264,7 @@ class EpubCreator
             </body>
             </html>
             XML;
-        file_put_contents('OEBPS/text/jacket.xhtml', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/text/jacket.xhtml', $text);
     }
 
     /**
@@ -323,7 +298,7 @@ class EpubCreator
             </body>
             </html>
             XML;
-        file_put_contents('./OEBPS/text/cover.xhtml', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/text/cover.xhtml', $text);
     }
 
     /**
@@ -372,7 +347,7 @@ class EpubCreator
                 </navMap>
             </ncx>
             XML;
-        file_put_contents('./OEBPS/toc.ncx', $text);
+        file_put_contents($this->tempFolder . '/OEBPS/toc.ncx', $text);
     }
 
     /**
@@ -386,6 +361,42 @@ class EpubCreator
             $outputFile = CharacterUtils::convertVietnameseToLowerAscii($this->title) . '.epub';
         }
 
+        [$coverWidth, $coverHeight] = getimagesize($this->coverPath);
+
+        for ($i = 0; $i < count($this->chapters); $i++) {
+            // Trường fileName không bao gồm đuôi .xhtml
+            $this->chapters[$i]['fileName'] = 'section-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
+        }
+
+        $this->clean();
+
+        file_put_contents($this->tempFolder . '/mimetype', 'application/epub+zip');
+
+        $this->createFolderIfNotExist($this->tempFolder . '/META-INF');
+        $this->generateContainerFile();
+
+        $this->createFolderIfNotExist($this->tempFolder . '/OEBPS');
+        $this->generateContentFile();
+        $this->geneateTocFile();
+
+        $this->createFolderIfNotExist($this->tempFolder . '/OEBPS/text');
+        $this->generateCoverFile($coverWidth, $coverHeight);
+        $this->generateJacketFile();
+        $this->generateNavFile();
+
+        // Ghi nội dung file
+        foreach ($this->chapters as $chapter) {
+            $fileName = $chapter['fileName'];
+            $content = $chapter['content'];
+            file_put_contents($this->tempFolder . '/OEBPS/text/' . $fileName . '.xhtml', $content);
+        }
+
+        $this->createFolderIfNotExist($this->tempFolder . '/OEBPS/images');
+        copy($this->coverPath, $this->tempFolder . '/OEBPS/images/cover.jpg');
+
+        $this->createFolderIfNotExist($this->tempFolder . '/OEBPS/css');
+        $this->generateStyleFile();
+
         if (file_exists($outputFile)) {
             unlink($outputFile);
         }
@@ -393,10 +404,10 @@ class EpubCreator
         $zipFile = new ZipArchive();
         $zipFile->open($outputFile, ZipArchive::CREATE);
 
-        $zipFile->addFile('mimetype', 'mimetype');
+        $zipFile->addFile($this->tempFolder . '/mimetype', 'mimetype');
 
-        ZipUtils::zipDir('./META-INF', $zipFile);
-        ZipUtils::zipDir('./OEBPS', $zipFile);
+        ZipUtils::zipDir($this->tempFolder . '/META-INF', $zipFile);
+        ZipUtils::zipDir($this->tempFolder . '/OEBPS', $zipFile);
 
         $zipFile->close();
 
@@ -411,7 +422,7 @@ class EpubCreator
         if (file_exists('mimetype')) {
             unlink('mimetype');
         }
-        FileUtils::deleteFolder('./META-INF');
-        FileUtils::deleteFolder('./OEBPS');
+        FileUtils::deleteFolder($this->tempFolder . '/META-INF');
+        FileUtils::deleteFolder($this->tempFolder . '/OEBPS');
     }
 }

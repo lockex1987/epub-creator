@@ -25,7 +25,7 @@ class EpubCreatorTest extends TestCase
         ];
         $coverPath = 'assets/cover.jpg';
 
-        $outputFile = CharacterUtils::convertVietnameseToLowerAscii($title);
+        $outputFile = CharacterUtils::convertVietnameseToLowerAscii($title) . '.epub';
         if (file_exists($outputFile)) {
             unlink($outputFile);
         }
